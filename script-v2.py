@@ -68,26 +68,19 @@ def fetch_severity(index, total, CVE):
     try:
         resp = requests.get(url, timeout=5, headers=headers)
         if resp.status_code == 200:
-            content = resp.text
-            severity = re.findall('"vuln-cvss3-panel-score">(.*)?</a>', content)
-            # print(severity)
+            html = resp.text
 
-            score, cve_level, _ = severity[0].split(' ')
+            soup = BeautifulSoup(html, "html.parser")
+            severity = soup.find('a', id="Cvss3NistCalculatorAnchor").get_text()
+            score, cve_level = severity.split(' ')
             cve_obj[CVE] = cve_level
             print(score, cve_level)
     except:
         print('v3 not scored, switch to v2...')
-        try:
-            soup = BeautifulSoup(content, "html.parser")
-            score_level = soup.find('a',
-                id="p_lt_WebPartZone1_zoneCenter_pageplaceholder_p_lt_WebPartZone1_zoneCenter_VulnerabilityDetail_VulnFormView_Cvss2CalculatorAnchor").get_text()
-
-            score, cve_level = score_level.split(' ')
-            cve_obj[CVE] = cve_level
-            print(score, cve_level)
-        except:
-            pass
-        pass
+        severity = soup.find('a', id="Cvss2CalculatorAnchor").get_text()
+        score, cve_level = severity.split(' ')
+        cve_obj[CVE] = cve_level
+        print(score, cve_level)
     finally:
         pass
     pass
@@ -127,7 +120,7 @@ def fetch_vul_info():
             print(query_str)
             print(vuls_info)
 
-            with open('result-v2.txt', 'a+', encoding='utf-8') as fw:
+            with open('cves.txt', 'a+', encoding='utf-8') as fw:
                 fw.write(query_str)
                 fw.write(url)
                 fw.write('\n')

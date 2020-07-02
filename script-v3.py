@@ -22,7 +22,7 @@ class CveObject:
         """
         print('----------------------------------')
         print('编号：', self.cve_no)
-        print('漏洞描述：', self.cve_description[:10])
+        print('漏洞描述：', self.cve_description)
         print('漏洞等级：', self.cve_level)
         print('漏洞评分：', self.cve_score)
         print('\n\n')
@@ -70,25 +70,20 @@ def fill_with_nvd(cve, cve_obj):
             description = re.findall('<p data-testid="vuln-description">(.*).</p>?', content)
             cve_obj.cve_description = description[0]
 
-            severity = re.findall('"vuln-cvss3-panel-score">(.*)?</a>', content)
-            # print(severity)
-            score, cve_level, _ = severity[0].split(' ')
+            soup = BeautifulSoup(content, "html.parser")
+            severity = soup.find('a', id="Cvss3NistCalculatorAnchor").get_text()
+            score, cve_level = severity.split(' ')
             cve_obj.cve_score = score
             cve_obj.cve_level = cve_level
             print(score, cve_level)
     except:
         print('v3 not scored, switch to v2...')
-        try:
-            soup = BeautifulSoup(content, "html.parser")
-            score_level = soup.find('a',
-                 id="p_lt_WebPartZone1_zoneCenter_pageplaceholder_p_lt_WebPartZone1_zoneCenter_VulnerabilityDetail_VulnFormView_Cvss2CalculatorAnchor").get_text()
 
-            score, cve_level = score_level.split(' ')
-            cve_obj.cve_score = score
-            cve_obj.cve_level = cve_level
-            print(score, cve_level)
-        except:
-            pass
+        severity = soup.find('a', id="Cvss2CalculatorAnchor").get_text()
+        score, cve_level = severity.split(' ')
+        cve_obj.cve_score = score
+        cve_obj.cve_level = cve_level
+        print(score, cve_level)
     finally:
         pass
     pass
@@ -170,8 +165,8 @@ def save_cve_objs():
         cve_info = '{}|{}|{}|{}|{}|{}\n'.format(obj.cve_no, obj.cve_nvd_url,
                                                        obj.cve_score, obj.cve_level, obj.cve_cna,
                                                        obj.cve_description)
-        with open('cve.txt', 'a+') as fw:
-            fw.write(cve_info)
+        # with open('cve.txt', 'a+') as fw:
+        #     fw.write(cve_info)
 
 
 def write2html():
